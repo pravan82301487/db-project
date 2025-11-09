@@ -24,12 +24,13 @@ def get_conn():
 
 
 @app.route('/update_server', methods=['POST'])
-    def webhook():
-        if request.method == 'POST':
-            repo = git.Repo(GIT_REPO)
-            origin = repo.remotes.originorigin.pull()return 'Updated PythonAnywhere successfully', 200
-        else:
-            return 'Wrong event type', 400
+def webhook():
+    if request.method == 'POST':
+        repo = git.Repo(GIT_REPO)
+        origin = repo.remotes.origin
+        origin.pull()
+        return 'Updated PythonAnywhere successfully', 200
+    return 'Wrong event type', 400
 
 @app.route("/", methods=["GET", "POST"])
 def index():
