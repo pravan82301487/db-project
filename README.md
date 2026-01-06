@@ -3,7 +3,7 @@ Diese Anleitung beschreibt den kompletten Ablauf, um das Projekt auszuführen un
 
 **Hinweis:** Nur eine Person pro Team muss diese Anleitung durchführen.
 
-## ✅ Voraussetzungen
+## ✅ Voraussetzungenfd
 
 ### 👥 Team
 
