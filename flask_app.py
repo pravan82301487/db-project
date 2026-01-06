@@ -16,7 +16,7 @@ format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 
 # Load .env variables
 load_dotenv()
-W_SECRET = os.getenv("W_SECRET")
+W_SECRET = os.getenv("W_SECRET") 
 
 # Init flask app
 app = Flask(__name__)
