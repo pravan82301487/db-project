@@ -1,50 +1,53 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <ul class="todo-list">
-          {% for todo in todos %}
-            <li class="todo-item">
-              <form action="/complete" method="POST" class="todo-complete-form">
+    <div class="header-section" style="margin-bottom: 20px;">
+        <h2>Meine Fächer Übersicht</h2>
+        <p>Angemeldet als: <strong>{{ current_user.benutzername }}</strong></p>
+    </div>
 
-                <input type="hidden" name="id" value="{{ todo.id }}">
+    <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 12px; text-align: left;">Fachname</th>
+                <th style="padding: 12px; text-align: left;">Semester</th>
+                <th style="padding: 12px; text-align: left;">Durchschnitt</th>
+                <th style="padding: 12px; text-align: left;">Plus-Punkte</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fach in faecher %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 12px;">
+                    <a href="{{ url_for('fach', fach_id=fach.id) }}" style="text-decoration: none; color: #007bff; font-weight: bold;">
+                        {{ fach.fachname }}
+                    </a>
+                </td>
+                <td style="padding: 12px;">{{ fach.semester }}</td>
+                <td style="padding: 12px;">
+                    {% if fach.durchschnitt %}
+                        {{ fach.durchschnitt }}
+                    {% else %}
+                        <span style="color: #6c757d; font-size: 0.9em;">Keine Noten</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px; font-weight: bold; color: {{ 'green' if fach.punkte >= 0 else 'red' }};">
+                    {{ fach.punkte }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="padding: 20px; text-align: center;">
+                    Noch keine Fächer vorhanden. Kontaktiere den Administrator oder füge Fächer hinzu.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-                <!-- Checkbox triggert Submit -->
-                <input
-                  type="checkbox"
-                  class="todo-checkbox"
-                  id="todo-{{ todo.id }}"
-                  name="complete"
-                  value="1"
-                  onchange="this.form.submit()">
-
-                <label for="todo-{{ todo.id }}" class="todo-content">
-                  {{ todo.content }}
-                  <span class="todo-date">📅 {{ todo.due.strftime('%d.%m.%Y %H:%M') }}</span>
-                </label>
-              </form>
-            </li>
-          {% else %}
-            <div>Nichts zu tun🎉</div>
-          {% endfor %}
-        </ul>
-
-      <div class="todo-form">
-        <form action="." method="POST">
-          <div class="form-group">
-            <label for="contents">TODO</label>
-            <input type="text" id="contents" name="contents" class="form-control"
-              placeholder="Neues TODO eingeben…" required />
-          </div>
-
-          <div class="form-group">
-            <label for="due_at">Fällig am</label>
-            <input id="due_at" name="due_at" type="datetime-local" class="form-control" required>
-            <p class="help-block">Wähle Datum & Uhrzeit (z. B. 07.11.2025 14:30).</p>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Hinzufügen</button>
-        </form>
-      </div>
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <a href="{{ url_for('semester') }}" class="btn" style="background-color: #6c757d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">
+            Semester-Statistik ansehen
+        </a>
+    </div>
 {% endblock %}
-
-      
