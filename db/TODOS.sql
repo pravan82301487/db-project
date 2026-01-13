@@ -1,13 +1,31 @@
-CREATE TABLE users (
+CREATE TABLE schueler (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(250) NOT NULL UNIQUE,
-    password VARCHAR(250) NOT NULL
+    benutzername VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE todos (
+CREATE TABLE semester (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    content VARCHAR(100),
-    due DATETIME,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE fach (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fachname VARCHAR(100) NOT NULL,
+    lehrer VARCHAR(100),
+    fachgewichtung FLOAT,
+    semester_id INT NOT NULL,
+    schueler_id INT NOT NULL,
+    FOREIGN KEY (semester_id) REFERENCES semester(id),
+    FOREIGN KEY (schueler_id) REFERENCES schueler(id)
+);
+
+CREATE TABLE note (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titel VARCHAR(100),
+    notenwert FLOAT NOT NULL,
+    gewichtung FLOAT NOT NULL,
+    datum DATE NOT NULL,
+    fach_id INT NOT NULL,
+    FOREIGN KEY (fach_id) REFERENCES fach(id)
 );
