@@ -109,26 +109,81 @@ def logout():
 
 
 # App routes
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 @login_required
 def index():
-    # GET
-    if request.method == "GET":
-        todos = db_read("SELECT id, content, due FROM todos WHERE user_id=%s ORDER BY due", (current_user.id,))
-        return render_template("main_page.html", todos=todos)
+    faecher = db_read("""
+        SELECT 
+            f.id,
+            f.fachname,
+            s.name AS semester,
+            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
+            COALESCE(SUM(n.notenwert - 4), 0) AS punkte
+        FROM fach f
+        JOIN semester s ON f.semester_id = s.id
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE f.schueler_id = %s
+        GROUP BY f.id, s.name
+        ORDER BY s.id, f.fachname
+    """, (current_user.id,))
 
-    # POST
-    content = request.form["contents"]
-    due = request.form["due_at"]
-    db_write("INSERT INTO todos (user_id, content, due) VALUES (%s, %s, %s)", (current_user.id, content, due, ))
-    return redirect(url_for("index"))
+    return render_template("main_page.html", faecher=faecher)
 
-@app.post("/complete")
+
+@app.route("/fach/<int:fach_id>")
 @login_required
-def complete():
-    todo_id = request.form.get("id")
-    db_write("DELETE FROM todos WHERE user_id=%s AND id=%s", (current_user.id, todo_id,))
-    return redirect(url_for("index"))
+def fach(fach_id):
+    noten = db_read("""
+        SELECT titel, notenwert, gewichtung, datum,
+               (notenwert - 4) AS punkte
+        FROM note
+        WHERE fach_id = %s
+        ORDER BY datum
+    """, (fach_id,))
+
+    fachname = db_read("SELECT fachname FROM fach WHERE id=%s", (fach_id,))[0]["fachname"]
+
+    return render_template("fach.html", noten=noten, fachname=fachname)
+
+
+@app.route("/note/add", methods=["POST"])
+@login_required
+def add_note():
+    fach_id = request.form["fach_id"]
+    titel = request.form["titel"]
+    wert = request.form["notenwert"]
+    gewichtung = request.form["gewichtung"]
+    datum = request.form["datum"]
+
+    db_write("""
+        INSERT INTO note (titel, notenwert, gewichtung, datum, fach_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (titel, wert, gewichtung, datum, fach_id))
+
+    return redirect(url_for("fach", fach_id=fach_id))
+
+
+@app.route("/semester")
+@login_required
+def semester():
+    semester = db_read("""
+        SELECT 
+            s.id,
+            s.name,
+            SUM(n.notenwert - 4) AS punkte,
+            CASE 
+                WHEN SUM(n.notenwert - 4) >= 0 THEN 'Bestanden'
+                ELSE 'Nicht bestanden'
+            END AS status
+        FROM semester s
+        JOIN fach f ON f.semester_id = s.id
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE f.schueler_id = %s
+        GROUP BY s.id
+        ORDER BY s.id
+    """, (current_user.id,))
+
+    return render_template("semester.html", semester=semester)
 
 if __name__ == "__main__":
     app.run()
