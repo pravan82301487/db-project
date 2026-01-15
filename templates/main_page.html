@@ -41,30 +41,17 @@
             </tr>
         </thead>
         <tbody>
-            {% for fach in faecher %}
-            <tr style="border-bottom: 1px solid #dee2e6;">
-                <td style="padding: 12px;">
-                    <a href="{{ url_for('fach', fach_id=fach.id) }}" style="text-decoration: none; color: #007bff; font-weight: bold;">
-                        {{ fach.fachname }}
-                    </a>
-                </td>
-                <td style="padding: 12px;">{{ fach.semester }}</td>
-                <td style="padding: 12px;">
-                    <strong>{{ fach.durchschnitt if fach.durchschnitt else '-' }}</strong>
-                </td>
-                <td style="padding: 12px;">
-                    <form method="POST" action="{{ url_for('add_note', fach_id=fach.id) }}" style="display: flex; gap: 5px;">
-                        <input type="number" step="0.1" min="1" max="6" name="notenwert" placeholder="Note" style="width: 60px;" required>
-                        <input type="hidden" name="gewichtung" value="1.0">
-                        <input type="hidden" name="titel" value="Prüfung">
-                        <input type="date" name="datum" required>
-                        <button type="submit">OK</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" style="text-align: center; padding: 20px;">Noch keine Fächer vorhanden.</td></tr>
-            {% endfor %}
-        </tbody>
+    {% for fach in faecher %}
+    <tr>
+        <td>{{ fach.fachname }}</td>
+        <td>
+            <form method="POST" action="{{ url_for('add_note', fach_id=fach.id) }}">
+                <input type="number" name="notenwert" placeholder="Note" required>
+                <button type="submit">OK</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
     </table>
 {% endblock %}
