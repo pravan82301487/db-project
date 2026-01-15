@@ -1,3 +1,29 @@
+<h3>Semester hinzufügen</h3>
+<form method="POST" action="{{ url_for('add_semester') }}">
+    <input type="text" name="name" placeholder="Semestername" required>
+    <button type="submit">Semester hinzufügen</button>
+</form>
+
+<h3>Fach hinzufügen</h3>
+<form method="POST" action="{{ url_for('add_fach', semester_id=1) }}">
+    <input type="text" name="fachname" placeholder="Fachname" required>
+    <input type="text" name="lehrer" placeholder="Lehrer">
+    <input type="number" step="0.1" name="fachgewichtung" placeholder="Gewichtung" required>
+    <button type="submit">Fach hinzufügen</button>
+</form>
+
+<h3>Note hinzufügen</h3>
+
+<form method="POST" action="{{ url_for('add_note', fach_id=fach_id) }}">
+    <input type="text" name="titel" placeholder="Titel">
+    <input type="number" step="0.1" min="1" max="6" name="notenwert" placeholder="Note" required>
+    <input type="number" step="0.1" name="gewichtung" placeholder="Gewichtung" required>
+    <input type="date" name="datum" required>
+    <button type="submit">Note speichern</button>
+</form>
+
+
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -50,4 +76,5 @@
             Semester-Statistik ansehen
         </a>
     </div>
+
 {% endblock %}
