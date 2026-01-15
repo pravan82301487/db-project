@@ -8,6 +8,7 @@ from db import db_read, db_write
 from auth import login_manager, authenticate, register_user
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
+from datetime import date
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -165,7 +166,7 @@ def index():
         ORDER BY s.id, f.fachname
     """, (current_user.id,))
 
-    return render_template("main_page.html", faecher=faecher)
+    return render_template("main_page.html", faecher=faecher, current_date=date.today().isoformat())
 
 @app.route("/fach/<int:fach_id>")
 @login_required
