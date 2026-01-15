@@ -106,6 +106,110 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
+@app.route("/semester/add", methods=["POST"])
+@login_required
+def add_semester():
+    name = request.form["name"]
+
+    db_write(
+        "INSERT INTO semester (name) VALUES (%s)",
+        (name,)
+    )
+
+    return redirect(url_for("index"))
+
+@app.route("/fach/add/<int:semester_id>", methods=["POST"])
+@login_required
+def add_fach(semester_id):
+    fachname = request.form["fachname"]
+    lehrer = request.form["lehrer"]
+    fachgewichtung = request.form["fachgewichtung"]
+
+    db_write("""
+        INSERT INTO fach (fachname, lehrer, fachgewichtung, semester_id, schueler_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (fachname, lehrer, fachgewichtung, semester_id, current_user.id))
+
+    return redirect(url_for("index"))
+
+@app.route("/note/add/<int:fach_id>", methods=["POST"])
+@login_required
+def add_note(fach_id):
+    titel = request.form["titel"]
+    notenwert = request.form["notenwert"]
+    gewichtung = request.form["gewichtung"]
+    datum = request.form["datum"]
+
+    db_write("""
+        INSERT INTO note (titel, notenwert, gewichtung, datum, fach_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (titel, notenwert, gewichtung, datum, fach_id))
+
+    return redirect(url_for("fach", fach_id=fach_id))
+
+@app.route("/")
+@login_required
+def index():
+    faecher = db_read("""
+        SELECT
+            f.id,
+            f.fachname,
+            s.name AS semester,
+            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
+            COALESCE(SUM(n.notenwert - 4), 0) AS pluspunkte
+        FROM fach f
+        JOIN semester s ON f.semester_id = s.id
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE f.schueler_id = %s
+        GROUP BY f.id, s.name
+        ORDER BY s.id, f.fachname
+    """, (current_user.id,))
+
+    return render_template("main_page.html", faecher=faecher)
+
+@app.route("/fach/<int:fach_id>")
+@login_required
+def fach(fach_id):
+    noten = db_read("""
+        SELECT
+            titel,
+            notenwert,
+            gewichtung,
+            datum,
+            (notenwert - 4) AS pluspunkte
+        FROM note
+        WHERE fach_id = %s
+        ORDER BY datum
+    """, (fach_id,))
+
+    fachname = db_read(
+        "SELECT fachname FROM fach WHERE id = %s",
+        (fach_id,)
+    )[0]["fachname"]
+
+    return render_template("fach.html", noten=noten, fachname=fachname)
+
+@app.route("/semester")
+@login_required
+def semester():
+    semester = db_read("""
+        SELECT
+            s.id,
+            s.name,
+            SUM(n.notenwert - 4) AS pluspunkte,
+            CASE
+                WHEN SUM(n.notenwert - 4) >= 0 THEN 'Bestanden'
+                ELSE 'Nicht bestanden'
+            END AS status
+        FROM semester s
+        JOIN fach f ON f.semester_id = s.id
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE f.schueler_id = %s
+        GROUP BY s.id
+        ORDER BY s.id
+    """, (current_user.id,))
+
+    return render_template("semester.html", semester=semester)
 
 
 # App routes
