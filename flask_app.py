@@ -150,11 +150,8 @@ def semester_list():
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
             ROUND(SUM(
                 CASE 
-                    WHEN ROUND(
-                        (SUM(n.notenwert * n.gewichtung) / SUM(n.gewichtung)) * 2
-                    ) / 2 >= 4.0 
-                    THEN ROUND((SUM(n.notenwert * n.gewichtung) / SUM(n.gewichtung)) * 2) / 2 - 4.0
-                    ELSE 2.0 * (ROUND((SUM(n.notenwert * n.gewichtung) / SUM(n.gewichtung)) * 2) / 2 - 4.0)
+                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
                 END
             ), 2) AS pluspunkte
         FROM semester s
@@ -185,6 +182,13 @@ def semester_detail(semester_id):
             f.fachname,
             f.lehrer,
             f.fachgewichtung,
+            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
+            ROUND(SUM(
+                CASE 
+                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
+                END
+            ), 2) AS pluspunkte,
             COUNT(n.id) AS anzahl_noten
         FROM fach f
         LEFT JOIN note n ON n.fach_id = f.id
@@ -192,36 +196,6 @@ def semester_detail(semester_id):
         GROUP BY f.id
         ORDER BY f.fachname
     """, (semester_id,))
-    
-    # Für jedes Fach: Durchschnitt und Pluspunkte berechnen
-    for fach in faecher:
-        noten = db_read("""
-            SELECT notenwert, gewichtung
-            FROM note
-            WHERE fach_id = %s
-        """, (fach["id"],))
-        
-        if noten:
-            total_gewichtung = sum(n["gewichtung"] for n in noten)
-            if total_gewichtung > 0:
-                durchschnitt = sum(n["notenwert"] * n["gewichtung"] for n in noten) / total_gewichtung
-                fach["durchschnitt"] = round(durchschnitt, 2)
-                
-                # Runde auf halbe Noten
-                gerundet = round(durchschnitt * 2) / 2
-                # Berechne Pluspunkte
-                if gerundet >= 4.0:
-                    pluspunkte = gerundet - 4.0
-                else:
-                    pluspunkte = 2.0 * (gerundet - 4.0)
-                
-                fach["pluspunkte"] = round(pluspunkte, 2)
-            else:
-                fach["durchschnitt"] = None
-                fach["pluspunkte"] = None
-        else:
-            fach["durchschnitt"] = None
-            fach["pluspunkte"] = None
     
     return render_template("semester_detail.html", semester=semester_info, faecher=faecher)
 
