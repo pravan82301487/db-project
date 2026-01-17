@@ -367,6 +367,26 @@ def delete_semester(semester_id):
     
     return redirect(url_for("semester_list"))
 
+@app.route("/semester/edit/<int:semester_id>", methods=["GET", "POST"])
+@login_required
+def edit_semester(semester_id):
+    # Semester-Info holen
+    semester = db_read(
+        "SELECT id, name FROM semester WHERE id = %s AND user_id = %s",
+        (semester_id, current_user.id),
+        single=True
+    )
+    
+    if not semester:
+        return "Semester nicht gefunden", 404
+    
+    if request.method == "POST":
+        name = request.form["name"]
+        db_write("UPDATE semester SET name = %s WHERE id = %s", (name, semester_id))
+        return redirect(url_for("semester_list"))
+    
+    return render_template("semester_edit.html", semester=semester)
+
 @app.route("/fach/delete/<int:fach_id>", methods=["POST"])
 @login_required
 def delete_fach(fach_id):
@@ -386,6 +406,33 @@ def delete_fach(fach_id):
     db_write("DELETE FROM fach WHERE id = %s", (fach_id,))
     
     return redirect(url_for("semester_detail", semester_id=semester_id))
+
+@app.route("/fach/edit/<int:fach_id>", methods=["GET", "POST"])
+@login_required
+def edit_fach(fach_id):
+    # Fach-Info holen
+    fach = db_read(
+        "SELECT f.id, f.fachname, f.lehrer, f.fachgewichtung, f.semester_id, s.name as semester_name FROM fach f JOIN semester s ON f.semester_id = s.id WHERE f.id = %s AND f.user_id = %s",
+        (fach_id, current_user.id),
+        single=True
+    )
+    
+    if not fach:
+        return "Fach nicht gefunden", 404
+    
+    if request.method == "POST":
+        fachname = request.form["fachname"]
+        lehrer = request.form["lehrer"]
+        fachgewichtung = request.form["fachgewichtung"]
+        
+        db_write(
+            "UPDATE fach SET fachname = %s, lehrer = %s, fachgewichtung = %s WHERE id = %s",
+            (fachname, lehrer, fachgewichtung, fach_id)
+        )
+        
+        return redirect(url_for("fach", fach_id=fach_id))
+    
+    return render_template("fach_edit.html", fach=fach)
 
 @app.route("/note/delete/<int:note_id>", methods=["POST"])
 @login_required
@@ -409,6 +456,37 @@ def delete_note(note_id):
     db_write("DELETE FROM note WHERE id = %s", (note_id,))
     
     return redirect(url_for("fach", fach_id=fach_id))
+
+@app.route("/note/edit/<int:note_id>", methods=["GET", "POST"])
+@login_required
+def edit_note(note_id):
+    # Note-Info holen
+    note_info = db_read(
+        """SELECT n.id, n.titel, n.notenwert, n.gewichtung, n.datum, n.fach_id, f.fachname
+           FROM note n
+           JOIN fach f ON n.fach_id = f.id
+           WHERE n.id = %s AND f.user_id = %s""",
+        (note_id, current_user.id),
+        single=True
+    )
+    
+    if not note_info:
+        return "Note nicht gefunden", 404
+    
+    if request.method == "POST":
+        titel = request.form["titel"]
+        notenwert = float(request.form["notenwert"])
+        gewichtung = float(request.form["gewichtung"])
+        datum = request.form["datum"]
+        
+        db_write(
+            "UPDATE note SET titel = %s, notenwert = %s, gewichtung = %s, datum = %s WHERE id = %s",
+            (titel, notenwert, gewichtung, datum, note_id)
+        )
+        
+        return redirect(url_for("fach", fach_id=note_info["fach_id"]))
+    
+    return render_template("note_edit.html", note=note_info)
 
 if __name__ == "__main__":
     app.run()

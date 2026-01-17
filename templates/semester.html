@@ -55,7 +55,10 @@
             </td>
             <td>
                 <a href="{{ url_for('add_fach', semester_id=sem.id) }}" class="btn btn-sm btn-primary">
-                    ➕ Fach hinzufügen
+                    ➕ Fach
+                </a>
+                <a href="{{ url_for('edit_semester', semester_id=sem.id) }}" class="btn btn-sm btn-warning">
+                    ✏️ Bearbeiten
                 </a>
                 <form action="{{ url_for('delete_semester', semester_id=sem.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Möchtest du das Semester \'{{ sem.name }}\' wirklich löschen? Alle Fächer und Noten werden ebenfalls gelöscht!');">
                     <button type="submit" class="btn btn-sm btn-danger">

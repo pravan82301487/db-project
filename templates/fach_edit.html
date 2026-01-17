@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 30px auto;">
+    <h2>✏️ Fach bearbeiten - {{ fach.semester_name }}</h2>
+    
+    <div style="background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); margin-top: 20px;">
+        <form action="{{ url_for('edit_fach', fach_id=fach.id) }}" method="post">
+            <div class="form-group">
+                <label for="fachname">Fachname *</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="fachname" 
+                    value="{{ fach.fachname }}"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="lehrer">Lehrer/Lehrerin</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="lehrer" 
+                    value="{{ fach.lehrer if fach.lehrer else '' }}"
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="fachgewichtung">Fachgewichtung *</label>
+                <input 
+                    type="number" 
+                    class="form-control" 
+                    name="fachgewichtung" 
+                    step="0.5"
+                    min="0.5"
+                    max="3"
+                    value="{{ fach.fachgewichtung if fach.fachgewichtung else 1 }}"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-success">
+                    ✓ Änderungen speichern
+                </button>
+                <a href="{{ url_for('fach', fach_id=fach.id) }}" class="btn btn-default">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
