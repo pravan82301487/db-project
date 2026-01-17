@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 30px auto;">
+    <h2>✏️ Note bearbeiten - {{ note.fachname }}</h2>
+    
+    <div style="background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); margin-top: 20px;">
+        <form action="{{ url_for('edit_note', note_id=note.id) }}" method="post">
+            <div class="form-group">
+                <label for="titel">Titel</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="titel" 
+                    value="{{ note.titel if note.titel else '' }}"
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="notenwert">Note *</label>
+                <input 
+                    type="number" 
+                    class="form-control" 
+                    name="notenwert" 
+                    step="0.01"
+                    min="1"
+                    max="6"
+                    value="{{ note.notenwert }}"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="gewichtung">Gewichtung *</label>
+                <input 
+                    type="number" 
+                    class="form-control" 
+                    name="gewichtung" 
+                    step="0.5"
+                    min="0.5"
+                    max="3"
+                    value="{{ note.gewichtung }}"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="datum">Datum *</label>
+                <input 
+                    type="date" 
+                    class="form-control" 
+                    name="datum" 
+                    value="{{ note.datum }}"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-success">
+                    ✓ Änderungen speichern
+                </button>
+                <a href="{{ url_for('fach', fach_id=note.fach_id) }}" class="btn btn-default">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
