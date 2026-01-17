@@ -51,13 +51,17 @@ def webhook():
 def berechne_pluspunkte(notenwert):
     """
     Schweizer System (Mathematische Formel):
-    - Wenn Note >= 4: P(g) = g - 4
-    - Wenn Note < 4:  P(g) = 2 * (g - 4)
+    1. Runde Note auf halbe Noten (z.B. 5.23 → 5.0)
+    2. Wenn Note >= 4: P(g) = g - 4
+    3. Wenn Note < 4:  P(g) = 2 * (g - 4)
     """
-    if notenwert >= 4.0:
-        return notenwert - 4.0
+    # Auf halbe Noten runden (0.5er Schritte)
+    gerundete_note = round(notenwert * 2) / 2
+    
+    if gerundete_note >= 4.0:
+        return gerundete_note - 4.0
     else:
-        return 2.0 * (notenwert - 4.0)
+        return 2.0 * (gerundete_note - 4.0)
 
 # Auth routes
 @app.route("/login", methods=["GET", "POST"])
@@ -146,8 +150,8 @@ def semester_list():
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
             ROUND(SUM(
                 CASE 
-                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
-                    ELSE 2.0 * (n.notenwert - 4.0)
+                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
                 END
             ), 2) AS pluspunkte
         FROM semester s
@@ -181,8 +185,8 @@ def semester_detail(semester_id):
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
             ROUND(SUM(
                 CASE 
-                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
-                    ELSE 2.0 * (n.notenwert - 4.0)
+                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
                 END
             ), 2) AS pluspunkte,
             COUNT(n.id) AS anzahl_noten
@@ -247,8 +251,8 @@ def fach(fach_id):
             datum,
             ROUND(
                 CASE 
-                    WHEN notenwert >= 4.0 THEN notenwert - 4.0
-                    ELSE 2.0 * (notenwert - 4.0)
+                    WHEN ROUND(notenwert * 2) / 2 >= 4.0 THEN ROUND(notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(notenwert * 2) / 2 - 4.0)
                 END
             , 2) AS pluspunkte
         FROM note
@@ -308,34 +312,11 @@ def add_note(fach_id):
     
     return render_template("note_add.html", fach_id=fach_id, fachname=fach_info["fachname"])
 
-# HAUPTSEITE
+# HAUPTSEITE - Direkt zur Semester-Übersicht
 @app.route("/")
 @login_required
 def index():
-    # Alle Fächer des Users mit Statistiken
-    faecher = db_read("""
-        SELECT
-            f.id,
-            f.fachname,
-            s.name AS semester,
-            s.id AS semester_id,
-            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM(
-                CASE 
-                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
-                    ELSE 2.0 * (n.notenwert - 4.0)
-                END
-            ), 2) AS pluspunkte,
-            COUNT(n.id) AS anzahl_noten
-        FROM fach f
-        JOIN semester s ON f.semester_id = s.id
-        LEFT JOIN note n ON n.fach_id = f.id
-        WHERE f.user_id = %s
-        GROUP BY f.id, s.name, s.id
-        ORDER BY s.id DESC, f.fachname
-    """, (current_user.id,))
-
-    return render_template("main_page.html", faecher=faecher, current_date=date.today().isoformat())
+    return redirect(url_for("semester_list"))
 
 # LÖSCHEN-FUNKTIONEN
 @app.route("/semester/delete/<int:semester_id>", methods=["POST"])
