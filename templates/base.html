@@ -13,6 +13,217 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <style>
+      /* Light Mode (Standard) */
+      :root {
+        --bg-color: #f9f9f9;
+        --text-color: #333;
+        --card-bg: #ffffff;
+        --border-color: #dee2e6;
+        --navbar-bg: #222;
+        --table-header-bg: #f8f9fa;
+        --shadow: rgba(0,0,0,0.06);
+      }
+
+      /* Dark Mode */
+      [data-theme="dark"] {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --card-bg: #2d2d2d;
+        --border-color: #444;
+        --navbar-bg: #0d0d0d;
+        --table-header-bg: #3a3a3a;
+        --shadow: rgba(0,0,0,0.3);
+      }
+
+      body { 
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .navbar-brand { font-weight: 600; }
+
+      /* Dark Mode Styles */
+      [data-theme="dark"] .navbar-inverse {
+        background-color: var(--navbar-bg);
+        border-color: #0d0d0d;
+      }
+
+      [data-theme="dark"] .table {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+      }
+
+      [data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: rgba(255,255,255,0.05);
+      }
+
+      [data-theme="dark"] .table > thead > tr > th {
+        background-color: var(--table-header-bg) !important;
+        color: var(--text-color);
+        border-color: var(--border-color);
+      }
+
+      [data-theme="dark"] .table > tbody > tr > td {
+        border-color: var(--border-color);
+      }
+
+      [data-theme="dark"] .alert-info {
+        background-color: #1a3a52;
+        border-color: #2d5a7b;
+        color: #9ec5e8;
+      }
+
+      [data-theme="dark"] .btn-default {
+        background-color: #3a3a3a;
+        border-color: #555;
+        color: #e0e0e0;
+      }
+
+      [data-theme="dark"] .btn-default:hover {
+        background-color: #4a4a4a;
+        border-color: #666;
+      }
+
+      [data-theme="dark"] .form-control {
+        background-color: #2d2d2d;
+        border-color: #555;
+        color: #e0e0e0;
+      }
+
+      [data-theme="dark"] .form-control:focus {
+        background-color: #353535;
+        border-color: #777;
+        color: #e0e0e0;
+      }
+
+      [data-theme="dark"] label {
+        color: #b0b0b0;
+      }
+
+      [data-theme="dark"] .text-muted {
+        color: #888 !important;
+      }
+
+      [data-theme="dark"] .label-default {
+        background-color: #555;
+      }
+
+      [data-theme="dark"] a {
+        color: #5ba3d0;
+      }
+
+      [data-theme="dark"] a:hover {
+        color: #7bc0ed;
+      }
+
+      /* Dark Mode Toggle Button */
+      #darkModeToggle {
+        cursor: pointer;
+        font-size: 1.2em;
+        padding: 10px 15px;
+        background: none;
+        border: none;
+        color: white;
+        transition: transform 0.3s ease;
+      }
+
+      #darkModeToggle:hover {
+        transform: scale(1.1);
+      }
+
+      /* Card-ähnliche Bereiche */
+      [data-theme="dark"] div[style*="background: #fff"],
+      [data-theme="dark"] div[style*="background: #ffffff"],
+      [data-theme="dark"] div[style*="background-color: #fff"],
+      [data-theme="dark"] div[style*="background-color: #ffffff"] {
+        background-color: var(--card-bg) !important;
+      }
+
+      [data-theme="dark"] div[style*="background: #f8f9fa"],
+      [data-theme="dark"] div[style*="background-color: #f8f9fa"] {
+        background-color: #2a2a2a !important;
+      }
+    </style>
+  </head>
+<body>  
+    <nav class="navbar navbar-inverse">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+            data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Navigation umschalten</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Pluspoints Tracker</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav navbar-right">
+            {% if current_user.is_authenticated %}
+              <li><a href="#">Hallo, {{ current_user.username }}</a></li>
+              <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+              <li><a href="{{ url_for('login') }}">Login</a></li>
+              <li><a href="{{ url_for('register') }}">Registrieren</a></li>
+            {% endif %}
+            <li>
+              <button id="darkModeToggle" title="Dark Mode umschalten">
+                <span id="themeIcon">🌙</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script>
+      // Dark Mode Toggle Funktionalität
+      const toggleButton = document.getElementById('darkModeToggle');
+      const themeIcon = document.getElementById('themeIcon');
+      const html = document.documentElement;
+
+      // Gespeicherte Einstellung laden
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      html.setAttribute('data-theme', currentTheme);
+      updateIcon(currentTheme);
+
+      // Toggle-Funktion
+      toggleButton.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateIcon(newTheme);
+      });
+
+      // Icon aktualisieren
+      function updateIcon(theme) {
+        themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      }
+    </script>
+  </body>
+</html><!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <title>Pluspoints Tracker</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+    <style>
       body { background-color: #f9f9f9; }
       .navbar-brand { font-weight: 600; }
     </style>
