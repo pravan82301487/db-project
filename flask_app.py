@@ -47,6 +47,15 @@ def webhook():
         return 'Updated PythonAnywhere successfully', 200
     return 'Unathorized', 401
 
+# HILFSFUNKTION: Pluspunkte nach Schweizer System berechnen
+def berechne_pluspunkte(notenwert):
+    """
+    Schweizer System:
+    6.0 = +2, 5.5 = +1.5, 5.0 = +1, 4.5 = +0.5, 4.0 = 0
+    3.5 = -0.5, 3.0 = -1, 2.5 = -1.5, 2.0 = -2, usw.
+    """
+    return (notenwert - 4.0) * 2
+
 # Auth routes
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -107,113 +116,203 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
-@app.route("/semester/add", methods=["POST"])
+# SEMESTER ROUTES
+@app.route("/semester/add", methods=["GET", "POST"])
 @login_required
 def add_semester():
-    name = request.form["name"]
+    if request.method == "POST":
+        name = request.form["name"]
+        
+        db_write(
+            "INSERT INTO semester (name, user_id) VALUES (%s, %s)",
+            (name, current_user.id)
+        )
+        
+        return redirect(url_for("semester_list"))
+    
+    return render_template("semester_add.html")
 
-    db_write(
-        "INSERT INTO semester (name) VALUES (%s)",
-        (name,)
-    )
+@app.route("/semester")
+@login_required
+def semester_list():
+    semester = db_read("""
+        SELECT
+            s.id,
+            s.name,
+            COUNT(DISTINCT f.id) AS anzahl_faecher,
+            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
+            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte
+        FROM semester s
+        LEFT JOIN fach f ON f.semester_id = s.id
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE s.user_id = %s
+        GROUP BY s.id
+        ORDER BY s.id DESC
+    """, (current_user.id,))
 
-    return redirect(url_for("index"))
+    return render_template("semester.html", semester=semester)
 
-@app.route("/fach/add/<int:semester_id>", methods=["POST"])
+@app.route("/semester/<int:semester_id>")
+@login_required
+def semester_detail(semester_id):
+    # Semester-Info holen
+    semester_info = db_read("""
+        SELECT id, name FROM semester WHERE id = %s AND user_id = %s
+    """, (semester_id, current_user.id), single=True)
+    
+    if not semester_info:
+        return "Semester nicht gefunden", 404
+    
+    # Fächer in diesem Semester
+    faecher = db_read("""
+        SELECT
+            f.id,
+            f.fachname,
+            f.lehrer,
+            f.fachgewichtung,
+            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
+            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte,
+            COUNT(n.id) AS anzahl_noten
+        FROM fach f
+        LEFT JOIN note n ON n.fach_id = f.id
+        WHERE f.semester_id = %s
+        GROUP BY f.id
+        ORDER BY f.fachname
+    """, (semester_id,))
+    
+    return render_template("semester_detail.html", semester=semester_info, faecher=faecher)
+
+# FACH ROUTES
+@app.route("/fach/add/<int:semester_id>", methods=["GET", "POST"])
 @login_required
 def add_fach(semester_id):
-    fachname = request.form["fachname"]
-    lehrer = request.form["lehrer"]
-    fachgewichtung = request.form["fachgewichtung"]
+    if request.method == "POST":
+        fachname = request.form["fachname"]
+        lehrer = request.form["lehrer"]
+        fachgewichtung = request.form["fachgewichtung"]
 
-    db_write("""
-        INSERT INTO fach (fachname, lehrer, fachgewichtung, semester_id, schueler_id)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (fachname, lehrer, fachgewichtung, semester_id, current_user.id))
+        db_write("""
+            INSERT INTO fach (fachname, lehrer, fachgewichtung, semester_id, user_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (fachname, lehrer, fachgewichtung, semester_id, current_user.id))
 
-    return redirect(url_for("index"))
+        return redirect(url_for("semester_detail", semester_id=semester_id))
+    
+    # Semester-Name für die Anzeige holen
+    semester_info = db_read(
+        "SELECT name FROM semester WHERE id = %s AND user_id = %s",
+        (semester_id, current_user.id),
+        single=True
+    )
+    
+    if not semester_info:
+        return "Semester nicht gefunden", 404
+    
+    return render_template("fach_add.html", semester_id=semester_id, semester_name=semester_info["name"])
 
-@app.route("/note/add/<int:fach_id>", methods=["POST"])
+@app.route("/fach/<int:fach_id>")
+@login_required
+def fach(fach_id):
+    # Fach-Info holen
+    fach_info = db_read("""
+        SELECT f.id, f.fachname, f.lehrer, f.fachgewichtung, s.name AS semester_name, f.semester_id
+        FROM fach f
+        JOIN semester s ON f.semester_id = s.id
+        WHERE f.id = %s AND f.user_id = %s
+    """, (fach_id, current_user.id), single=True)
+    
+    if not fach_info:
+        return "Fach nicht gefunden", 404
+    
+    # Noten holen
+    noten = db_read("""
+        SELECT
+            id,
+            titel,
+            notenwert,
+            gewichtung,
+            datum,
+            ROUND((notenwert - 4.0) * 2, 2) AS pluspunkte
+        FROM note
+        WHERE fach_id = %s
+        ORDER BY datum DESC
+    """, (fach_id,))
+    
+    # Durchschnitt berechnen (gewichtet)
+    if noten:
+        total_gewichtung = sum(n["gewichtung"] for n in noten)
+        if total_gewichtung > 0:
+            durchschnitt = sum(n["notenwert"] * n["gewichtung"] for n in noten) / total_gewichtung
+            durchschnitt = round(durchschnitt, 2)
+        else:
+            durchschnitt = None
+        
+        total_pluspunkte = sum(n["pluspunkte"] for n in noten)
+        total_pluspunkte = round(total_pluspunkte, 2)
+    else:
+        durchschnitt = None
+        total_pluspunkte = 0
+
+    return render_template(
+        "fach.html",
+        fach=fach_info,
+        noten=noten,
+        durchschnitt=durchschnitt,
+        total_pluspunkte=total_pluspunkte
+    )
+
+# NOTEN ROUTES
+@app.route("/note/add/<int:fach_id>", methods=["GET", "POST"])
 @login_required
 def add_note(fach_id):
-    titel = request.form["titel"]
-    notenwert = request.form["notenwert"]
-    gewichtung = request.form["gewichtung"]
-    datum = request.form["datum"]
+    if request.method == "POST":
+        titel = request.form["titel"]
+        notenwert = float(request.form["notenwert"])
+        gewichtung = float(request.form["gewichtung"])
+        datum = request.form["datum"]
 
-    db_write("""
-        INSERT INTO note (titel, notenwert, gewichtung, datum, fach_id)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (titel, notenwert, gewichtung, datum, fach_id))
+        db_write("""
+            INSERT INTO note (titel, notenwert, gewichtung, datum, fach_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (titel, notenwert, gewichtung, datum, fach_id))
 
-    return redirect(url_for("fach", fach_id=fach_id))
+        return redirect(url_for("fach", fach_id=fach_id))
+    
+    # Fach-Info für Anzeige
+    fach_info = db_read("""
+        SELECT f.fachname, f.semester_id
+        FROM fach f
+        WHERE f.id = %s AND f.user_id = %s
+    """, (fach_id, current_user.id), single=True)
+    
+    if not fach_info:
+        return "Fach nicht gefunden", 404
+    
+    return render_template("note_add.html", fach_id=fach_id, fachname=fach_info["fachname"])
 
+# HAUPTSEITE
 @app.route("/")
 @login_required
 def index():
+    # Alle Fächer des Users mit Statistiken
     faecher = db_read("""
         SELECT
             f.id,
             f.fachname,
             s.name AS semester,
+            s.id AS semester_id,
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            COALESCE(SUM(n.notenwert - 4), 0) AS pluspunkte
+            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte,
+            COUNT(n.id) AS anzahl_noten
         FROM fach f
         JOIN semester s ON f.semester_id = s.id
         LEFT JOIN note n ON n.fach_id = f.id
-        WHERE f.schueler_id = %s
-        GROUP BY f.id, s.name
-        ORDER BY s.id, f.fachname
+        WHERE f.user_id = %s
+        GROUP BY f.id, s.name, s.id
+        ORDER BY s.id DESC, f.fachname
     """, (current_user.id,))
 
     return render_template("main_page.html", faecher=faecher, current_date=date.today().isoformat())
-
-@app.route("/fach/<int:fach_id>")
-@login_required
-def fach(fach_id):
-    noten = db_read("""
-        SELECT
-            titel,
-            notenwert,
-            gewichtung,
-            datum,
-            (notenwert - 4) AS pluspunkte
-        FROM note
-        WHERE fach_id = %s
-        ORDER BY datum
-    """, (fach_id,))
-
-    fachname = db_read(
-        "SELECT fachname FROM fach WHERE id = %s",
-        (fach_id,)
-    )[0]["fachname"]
-
-    return render_template("fach.html", noten=noten, fachname=fachname)
-
-@app.route("/semester")
-@login_required
-def semester():
-    semester = db_read("""
-        SELECT
-            s.id,
-            s.name,
-            SUM(n.notenwert - 4) AS pluspunkte,
-            CASE
-                WHEN SUM(n.notenwert - 4) >= 0 THEN 'Bestanden'
-                ELSE 'Nicht bestanden'
-            END AS status
-        FROM semester s
-        JOIN fach f ON f.semester_id = s.id
-        LEFT JOIN note n ON n.fach_id = f.id
-        WHERE f.schueler_id = %s
-        GROUP BY s.id
-        ORDER BY s.id
-    """, (current_user.id,))
-
-    return render_template("semester.html", semester=semester)
-
-
-
 
 if __name__ == "__main__":
     app.run()

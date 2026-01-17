@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 30px auto;">
+    <h2>➕ Neues Fach in {{ semester_name }}</h2>
+    
+    <div style="background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); margin-top: 20px;">
+        <form action="{{ url_for('add_fach', semester_id=semester_id) }}" method="post">
+            <div class="form-group">
+                <label for="fachname">Fachname *</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="fachname" 
+                    placeholder="z.B. Mathematik, Deutsch, Englisch"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="lehrer">Lehrer/Lehrerin</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="lehrer" 
+                    placeholder="z.B. Herr Müller (optional)"
+                    style="font-size: 16px; padding: 10px;"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="fachgewichtung">Fachgewichtung *</label>
+                <input 
+                    type="number" 
+                    class="form-control" 
+                    name="fachgewichtung" 
+                    step="0.5"
+                    min="0.5"
+                    max="3"
+                    value="1"
+                    required
+                    style="font-size: 16px; padding: 10px;"
+                >
+                <small class="form-text text-muted">
+                    Standard ist 1.0. Doppelgewichtete Fächer = 2.0, Halbgewichtet = 0.5
+                </small>
+            </div>
+            
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-success">
+                    ✓ Fach erstellen
+                </button>
+                <a href="{{ url_for('semester_detail', semester_id=semester_id) }}" class="btn btn-default">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="alert alert-info" style="margin-top: 20px;">
+        <strong>ℹ️ Info:</strong> Die Fachgewichtung wird für die Berechnung des Gesamtdurchschnitts verwendet.
+    </div>
+</div>
+{% endblock %}

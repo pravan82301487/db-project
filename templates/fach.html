@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header-section" style="margin-bottom: 20px;">
+    <h2>📖 {{ fach.fachname }}</h2>
+    <p>
+        <strong>Lehrer:</strong> {{ fach.lehrer if fach.lehrer else '-' }} | 
+        <strong>Gewichtung:</strong> {{ fach.fachgewichtung }} | 
+        <strong>Semester:</strong> {{ fach.semester_name }}
+    </p>
+</div>
+
+<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div>
+            <h4 style="margin: 0 0 10px 0; color: #666;">Durchschnitt</h4>
+            <p style="font-size: 2em; font-weight: bold; margin: 0; color: {{ 'green' if durchschnitt and durchschnitt >= 4 else 'red' }};">
+                {{ durchschnitt if durchschnitt else '-' }}
+            </p>
+        </div>
+        <div>
+            <h4 style="margin: 0 0 10px 0; color: #666;">Pluspunkte Total</h4>
+            <p style="font-size: 2em; font-weight: bold; margin: 0; color: {{ 'green' if total_pluspunkte >= 0 else 'red' }};">
+                {{ total_pluspunkte }}
+            </p>
+        </div>
+        <div>
+            <h4 style="margin: 0 0 10px 0; color: #666;">Anzahl Noten</h4>
+            <p style="font-size: 2em; font-weight: bold; margin: 0;">
+                {{ noten|length }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<div style="margin-bottom: 20px;">
+    <a href="{{ url_for('add_note', fach_id=fach.id) }}" class="btn btn-success">
+        ➕ Neue Note hinzufügen
+    </a>
+</div>
+
+{% if noten %}
+<table class="table table-striped" style="width: 100%;">
+    <thead>
+        <tr style="background-color: #f8f9fa;">
+            <th>Datum</th>
+            <th>Titel</th>
+            <th>Note</th>
+            <th>Gewichtung</th>
+            <th>Pluspunkte</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for note in noten %}
+        <tr>
+            <td>{{ note.datum }}</td>
+            <td>{{ note.titel if note.titel else '-' }}</td>
+            <td>
+                <span style="font-weight: bold; color: {{ 'green' if note.notenwert >= 4 else 'red' }};">
+                    {{ note.notenwert }}
+                </span>
+            </td>
+            <td>{{ note.gewichtung }}</td>
+            <td>
+                <span style="font-weight: bold; color: {{ 'green' if note.pluspunkte >= 0 else 'red' }};">
+                    {{ note.pluspunkte }}
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" style="margin-top: 20px; padding: 20px; text-align: center;">
+    <h4>Noch keine Noten vorhanden</h4>
+    <p>Füge deine erste Note hinzu, um deine Leistung zu tracken.</p>
+    <a href="{{ url_for('add_note', fach_id=fach.id) }}" class="btn btn-success" style="margin-top: 10px;">
+        ➕ Erste Note hinzufügen
+    </a>
+</div>
+{% endif %}
+
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('semester_detail', semester_id=fach.semester_id) }}" class="btn btn-default">
+        ← Zurück zum Semester
+    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-default">
+        🏠 Zur Hauptseite
+    </a>
+</div>
+{% endblock %}

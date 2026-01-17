@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header-section" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <h2>📚 Meine Semester</h2>
+    <a href="{{ url_for('add_semester') }}" class="btn btn-success">
+        ➕ Neues Semester
+    </a>
+</div>
+
+{% if semester %}
+<table class="table table-striped" style="width: 100%; margin-top: 20px;">
+    <thead>
+        <tr style="background-color: #f8f9fa;">
+            <th>Semester</th>
+            <th>Anzahl Fächer</th>
+            <th>Durchschnitt</th>
+            <th>Pluspunkte</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sem in semester %}
+        <tr>
+            <td>
+                <a href="{{ url_for('semester_detail', semester_id=sem.id) }}" style="text-decoration: none; font-weight: bold;">
+                    {{ sem.name }}
+                </a>
+            </td>
+            <td>{{ sem.anzahl_faecher }}</td>
+            <td>
+                {% if sem.durchschnitt %}
+                    <span style="font-weight: bold; color: {{ 'green' if sem.durchschnitt >= 4 else 'red' }};">
+                        {{ sem.durchschnitt }}
+                    </span>
+                {% else %}
+                    <span style="color: #999;">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <span style="font-weight: bold; color: {{ 'green' if sem.pluspunkte >= 0 else 'red' }};">
+                    {{ sem.pluspunkte if sem.pluspunkte else 0 }}
+                </span>
+            </td>
+            <td>
+                {% if sem.pluspunkte %}
+                    {% if sem.pluspunkte >= 0 %}
+                        <span class="label label-success">✓ Bestanden</span>
+                    {% else %}
+                        <span class="label label-danger">✗ Nicht bestanden</span>
+                    {% endif %}
+                {% else %}
+                    <span class="label label-default">Keine Noten</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('add_fach', semester_id=sem.id) }}" class="btn btn-sm btn-primary">
+                    ➕ Fach hinzufügen
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" style="margin-top: 30px; padding: 20px; text-align: center;">
+    <h4>Noch keine Semester vorhanden</h4>
+    <p>Erstelle dein erstes Semester, um loszulegen.</p>
+    <a href="{{ url_for('add_semester') }}" class="btn btn-success" style="margin-top: 10px;">
+        ➕ Erstes Semester erstellen
+    </a>
+</div>
+{% endif %}
+
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('index') }}" class="btn btn-default">
+        ← Zurück zur Übersicht
+    </a>
+</div>
+{% endblock %}

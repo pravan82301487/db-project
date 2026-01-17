@@ -1,12 +1,14 @@
-CREATE TABLE schueler (
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    benutzername VARCHAR(100) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE semester (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE fach (
@@ -15,9 +17,9 @@ CREATE TABLE fach (
     lehrer VARCHAR(100),
     fachgewichtung FLOAT,
     semester_id INT NOT NULL,
-    schueler_id INT NOT NULL,
-    FOREIGN KEY (semester_id) REFERENCES semester(id),
-    FOREIGN KEY (schueler_id) REFERENCES schueler(id)
+    user_id INT NOT NULL,
+    FOREIGN KEY (semester_id) REFERENCES semester(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE note (
@@ -27,5 +29,5 @@ CREATE TABLE note (
     gewichtung FLOAT NOT NULL,
     datum DATE NOT NULL,
     fach_id INT NOT NULL,
-    FOREIGN KEY (fach_id) REFERENCES fach(id)
+    FOREIGN KEY (fach_id) REFERENCES fach(id) ON DELETE CASCADE
 );

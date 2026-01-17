@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header-section" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <h2>📚 {{ semester.name }}</h2>
+    <a href="{{ url_for('add_fach', semester_id=semester.id) }}" class="btn btn-success">
+        ➕ Neues Fach
+    </a>
+</div>
+
+{% if faecher %}
+<table class="table table-striped" style="width: 100%; margin-top: 20px;">
+    <thead>
+        <tr style="background-color: #f8f9fa;">
+            <th>Fachname</th>
+            <th>Lehrer</th>
+            <th>Gewichtung</th>
+            <th>Anzahl Noten</th>
+            <th>Durchschnitt</th>
+            <th>Pluspunkte</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fach in faecher %}
+        <tr>
+            <td>
+                <a href="{{ url_for('fach', fach_id=fach.id) }}" style="text-decoration: none; font-weight: bold;">
+                    {{ fach.fachname }}
+                </a>
+            </td>
+            <td>{{ fach.lehrer if fach.lehrer else '-' }}</td>
+            <td>{{ fach.fachgewichtung if fach.fachgewichtung else '1.0' }}</td>
+            <td>{{ fach.anzahl_noten }}</td>
+            <td>
+                {% if fach.durchschnitt %}
+                    <span style="font-weight: bold; color: {{ 'green' if fach.durchschnitt >= 4 else 'red' }};">
+                        {{ fach.durchschnitt }}
+                    </span>
+                {% else %}
+                    <span style="color: #999;">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <span style="font-weight: bold; color: {{ 'green' if fach.pluspunkte >= 0 else 'red' }};">
+                    {{ fach.pluspunkte if fach.pluspunkte else 0 }}
+                </span>
+            </td>
+            <td>
+                <a href="{{ url_for('add_note', fach_id=fach.id) }}" class="btn btn-sm btn-primary">
+                    ➕ Note
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" style="margin-top: 30px; padding: 20px; text-align: center;">
+    <h4>Noch keine Fächer in diesem Semester</h4>
+    <p>Füge dein erstes Fach hinzu, um Noten einzutragen.</p>
+    <a href="{{ url_for('add_fach', semester_id=semester.id) }}" class="btn btn-success" style="margin-top: 10px;">
+        ➕ Erstes Fach hinzufügen
+    </a>
+</div>
+{% endif %}
+
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('semester_list') }}" class="btn btn-default">
+        ← Zurück zur Semester-Übersicht
+    </a>
+</div>
+{% endblock %}

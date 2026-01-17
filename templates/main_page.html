@@ -1,55 +1,76 @@
-
 {% extends "base.html" %}
-
 {% block content %}
-    <div class="header-section" style="margin-bottom: 20px;">
+<div class="header-section" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
         <h2>Meine Fächer Übersicht</h2>
-        <p>Angemeldet als: <strong>{{ current_user.benutzername }}</strong></p>
+        <p>Angemeldet als: <strong>{{ current_user.username }}</strong></p>
     </div>
-
-    <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-        <thead>
-            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                <th style="padding: 12px; text-align: left;">Fachname</th>
-                <th style="padding: 12px; text-align: left;">Semester</th>
-                <th style="padding: 12px; text-align: left;">Durchschnitt</th>
-                <th style="padding: 12px; text-align: left;">Plus-Punkte</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for fach in faecher %}
-            <tr style="border-bottom: 1px solid #dee2e6;">
-                <td style="padding: 12px;">
-                    <a href="{{ url_for('fach', fach_id=fach.id) }}" style="text-decoration: none; color: #007bff; font-weight: bold;">
-                        {{ fach.fachname }}
-                    </a>
-                </td>
-                <td style="padding: 12px;">{{ fach.semester }}</td>
-                <td style="padding: 12px;">
-                    {% if fach.durchschnitt %}
-                        {{ fach.durchschnitt }}
-                    {% else %}
-                        <span style="color: #6c757d; font-size: 0.9em;">Keine Noten</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 12px; font-weight: bold; color: {{ 'green' if fach.punkte >= 0 else 'red' }};">
-                    {{ fach.punkte }}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="4" style="padding: 20px; text-align: center;">
-                    Noch keine Fächer vorhanden. Kontaktiere den Administrator oder füge Fächer hinzu.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <a href="{{ url_for('semester') }}" class="btn" style="background-color: #6c757d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">
-            Semester-Statistik ansehen
+    <div>
+        <a href="{{ url_for('semester_list') }}" class="btn btn-primary" style="margin-right: 10px;">
+            📊 Semester-Übersicht
+        </a>
+        <a href="{{ url_for('add_semester') }}" class="btn btn-success">
+            ➕ Neues Semester
         </a>
     </div>
+</div>
 
+{% if faecher %}
+<table class="table table-striped" style="width: 100%; margin-top: 20px;">
+    <thead>
+        <tr style="background-color: #f8f9fa;">
+            <th>Fachname</th>
+            <th>Semester</th>
+            <th>Anzahl Noten</th>
+            <th>Durchschnitt</th>
+            <th>Pluspunkte</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fach in faecher %}
+        <tr>
+            <td>
+                <a href="{{ url_for('fach', fach_id=fach.id) }}" style="text-decoration: none; font-weight: bold;">
+                    {{ fach.fachname }}
+                </a>
+            </td>
+            <td>
+                <a href="{{ url_for('semester_detail', semester_id=fach.semester_id) }}" style="text-decoration: none;">
+                    {{ fach.semester }}
+                </a>
+            </td>
+            <td>{{ fach.anzahl_noten }}</td>
+            <td>
+                {% if fach.durchschnitt %}
+                    <span style="font-weight: bold; color: {{ 'green' if fach.durchschnitt >= 4 else 'red' }};">
+                        {{ fach.durchschnitt }}
+                    </span>
+                {% else %}
+                    <span style="color: #999;">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <span style="font-weight: bold; color: {{ 'green' if fach.pluspunkte >= 0 else 'red' }};">
+                    {{ fach.pluspunkte if fach.pluspunkte else 0 }}
+                </span>
+            </td>
+            <td>
+                <a href="{{ url_for('add_note', fach_id=fach.id) }}" class="btn btn-sm btn-primary">
+                    ➕ Note
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info" style="margin-top: 30px; padding: 20px; text-align: center;">
+    <h4>Noch keine Fächer vorhanden</h4>
+    <p>Erstelle zuerst ein Semester, dann kannst du Fächer hinzufügen.</p>
+    <a href="{{ url_for('add_semester') }}" class="btn btn-success" style="margin-top: 10px;">
+        ➕ Erstes Semester erstellen
+    </a>
+</div>
+{% endif %}
 {% endblock %}
