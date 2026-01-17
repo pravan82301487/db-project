@@ -42,7 +42,7 @@
             </td>
             <td>
                 <span style="font-weight: bold; color: {{ 'green' if fach.pluspunkte and fach.pluspunkte >= 0 else 'red' }};">
-                    {{ fach.pluspunkte if fach.pluspunkte else 0 }}
+                    {{ fach.pluspunkte if fach.pluspunkte is not none else '-' }}
                 </span>
             </td>
             <td>

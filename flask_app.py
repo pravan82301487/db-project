@@ -146,21 +146,47 @@ def semester_list():
         SELECT
             s.id,
             s.name,
-            COUNT(DISTINCT f.id) AS anzahl_faecher,
-            ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM(
-                CASE 
-                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
-                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
-                END
-            ), 2) AS pluspunkte
+            COUNT(DISTINCT f.id) AS anzahl_faecher
         FROM semester s
         LEFT JOIN fach f ON f.semester_id = s.id
-        LEFT JOIN note n ON n.fach_id = f.id
         WHERE s.user_id = %s
         GROUP BY s.id
         ORDER BY s.id DESC
     """, (current_user.id,))
+    
+    # Für jedes Semester: Durchschnitt und Pluspunkte berechnen
+    for sem in semester:
+        # Alle Fächer des Semesters mit ihren Durchschnitten holen
+        faecher_im_semester = db_read("""
+            SELECT 
+                f.fachgewichtung,
+                AVG(n.notenwert) as fach_durchschnitt
+            FROM fach f
+            LEFT JOIN note n ON n.fach_id = f.id
+            WHERE f.semester_id = %s
+            GROUP BY f.id, f.fachgewichtung
+            HAVING fach_durchschnitt IS NOT NULL
+        """, (sem["id"],))
+        
+        if faecher_im_semester:
+            # Gewichteter Durchschnitt aller Fächer
+            total_gewichtung = sum(f["fachgewichtung"] or 1.0 for f in faecher_im_semester)
+            gewichteter_durchschnitt = sum(
+                (f["fach_durchschnitt"] * (f["fachgewichtung"] or 1.0)) 
+                for f in faecher_im_semester
+            ) / total_gewichtung
+            
+            sem["durchschnitt"] = round(gewichteter_durchschnitt, 2)
+            
+            # Pluspunkte basierend auf gerundetem Semester-Durchschnitt
+            gerundeter_schnitt = round(gewichteter_durchschnitt * 2) / 2
+            if gerundeter_schnitt >= 4.0:
+                sem["pluspunkte"] = round(gerundeter_schnitt - 4.0, 2)
+            else:
+                sem["pluspunkte"] = round(2.0 * (gerundeter_schnitt - 4.0), 2)
+        else:
+            sem["durchschnitt"] = None
+            sem["pluspunkte"] = None
 
     return render_template("semester.html", semester=semester)
 
@@ -183,12 +209,6 @@ def semester_detail(semester_id):
             f.lehrer,
             f.fachgewichtung,
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM(
-                CASE 
-                    WHEN ROUND(n.notenwert * 2) / 2 >= 4.0 THEN ROUND(n.notenwert * 2) / 2 - 4.0
-                    ELSE 2.0 * (ROUND(n.notenwert * 2) / 2 - 4.0)
-                END
-            ), 2) AS pluspunkte,
             COUNT(n.id) AS anzahl_noten
         FROM fach f
         LEFT JOIN note n ON n.fach_id = f.id
@@ -196,6 +216,17 @@ def semester_detail(semester_id):
         GROUP BY f.id
         ORDER BY f.fachname
     """, (semester_id,))
+    
+    # Pluspunkte für jedes Fach berechnen (basierend auf gerundetem Durchschnitt)
+    for fach in faecher:
+        if fach["durchschnitt"] is not None:
+            gerundeter_schnitt = round(fach["durchschnitt"] * 2) / 2
+            if gerundeter_schnitt >= 4.0:
+                fach["pluspunkte"] = round(gerundeter_schnitt - 4.0, 2)
+            else:
+                fach["pluspunkte"] = round(2.0 * (gerundeter_schnitt - 4.0), 2)
+        else:
+            fach["pluspunkte"] = None
     
     return render_template("semester_detail.html", semester=semester_info, faecher=faecher)
 
@@ -241,20 +272,14 @@ def fach(fach_id):
     if not fach_info:
         return "Fach nicht gefunden", 404
     
-    # Noten holen
+    # Noten holen (OHNE Pluspunkte!)
     noten = db_read("""
         SELECT
             id,
             titel,
             notenwert,
             gewichtung,
-            datum,
-            ROUND(
-                CASE 
-                    WHEN ROUND(notenwert * 2) / 2 >= 4.0 THEN ROUND(notenwert * 2) / 2 - 4.0
-                    ELSE 2.0 * (ROUND(notenwert * 2) / 2 - 4.0)
-                END
-            , 2) AS pluspunkte
+            datum
         FROM note
         WHERE fach_id = %s
         ORDER BY datum DESC
@@ -266,14 +291,19 @@ def fach(fach_id):
         if total_gewichtung > 0:
             durchschnitt = sum(n["notenwert"] * n["gewichtung"] for n in noten) / total_gewichtung
             durchschnitt = round(durchschnitt, 2)
+            
+            # Pluspunkte basierend auf gerundetem Durchschnitt
+            gerundeter_schnitt = round(durchschnitt * 2) / 2
+            if gerundeter_schnitt >= 4.0:
+                total_pluspunkte = round(gerundeter_schnitt - 4.0, 2)
+            else:
+                total_pluspunkte = round(2.0 * (gerundeter_schnitt - 4.0), 2)
         else:
             durchschnitt = None
-        
-        total_pluspunkte = sum(n["pluspunkte"] for n in noten)
-        total_pluspunkte = round(total_pluspunkte, 2)
+            total_pluspunkte = None
     else:
         durchschnitt = None
-        total_pluspunkte = 0
+        total_pluspunkte = None
 
     return render_template(
         "fach.html",

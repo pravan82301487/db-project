@@ -39,7 +39,7 @@
             </td>
             <td>
                 <span style="font-weight: bold; color: {{ 'green' if sem.pluspunkte and sem.pluspunkte >= 0 else 'red' }};">
-                    {{ sem.pluspunkte if sem.pluspunkte else 0 }}
+                    {{ sem.pluspunkte if sem.pluspunkte is not none else '-' }}
                 </span>
             </td>
             <td>
