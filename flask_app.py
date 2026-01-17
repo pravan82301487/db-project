@@ -267,37 +267,36 @@ def fach(fach_id):
     if not fach_info:
         return "Fach nicht gefunden", 404
     
-    # Noten holen (OHNE Pluspunkte pro Note)
+    # Noten holen
     noten = db_read("""
         SELECT
             id,
             titel,
             notenwert,
             gewichtung,
-            datum
+            datum,
+            ROUND(
+                CASE 
+                    WHEN ROUND(notenwert * 2) / 2 >= 4.0 THEN ROUND(notenwert * 2) / 2 - 4.0
+                    ELSE 2.0 * (ROUND(notenwert * 2) / 2 - 4.0)
+                END
+            , 2) AS pluspunkte
         FROM note
         WHERE fach_id = %s
         ORDER BY datum DESC
     """, (fach_id,))
     
-    # Durchschnitt und Pluspunkte berechnen (gewichtet)
+    # Durchschnitt berechnen (gewichtet)
     if noten:
         total_gewichtung = sum(n["gewichtung"] for n in noten)
         if total_gewichtung > 0:
             durchschnitt = sum(n["notenwert"] * n["gewichtung"] for n in noten) / total_gewichtung
             durchschnitt = round(durchschnitt, 2)
-            
-            # Runde Durchschnitt auf halbe Noten für Pluspunkte
-            gerundet = round(durchschnitt * 2) / 2
-            if gerundet >= 4.0:
-                total_pluspunkte = gerundet - 4.0
-            else:
-                total_pluspunkte = 2.0 * (gerundet - 4.0)
-            
-            total_pluspunkte = round(total_pluspunkte, 2)
         else:
             durchschnitt = None
-            total_pluspunkte = 0
+        
+        total_pluspunkte = sum(n["pluspunkte"] for n in noten)
+        total_pluspunkte = round(total_pluspunkte, 2)
     else:
         durchschnitt = None
         total_pluspunkte = 0
