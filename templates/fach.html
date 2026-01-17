@@ -18,10 +18,15 @@
             </p>
         </div>
         <div>
-            <h4 style="margin: 0 0 10px 0; color: #666;">Pluspunkte Total</h4>
+            <h4 style="margin: 0 0 10px 0; color: #666;">Pluspunkte (gerundet)</h4>
             <p style="font-size: 2em; font-weight: bold; margin: 0; color: {{ 'green' if total_pluspunkte >= 0 else 'red' }};">
                 {{ total_pluspunkte }}
             </p>
+            <small style="color: #666;">
+                {% if durchschnitt %}
+                    (Durchschnitt {{ durchschnitt }} → gerundet auf {{ "%.1f"|format((durchschnitt * 2)|round / 2) }})
+                {% endif %}
+            </small>
         </div>
         <div>
             <h4 style="margin: 0 0 10px 0; color: #666;">Anzahl Noten</h4>
@@ -51,7 +56,6 @@
             <th>Titel</th>
             <th>Note</th>
             <th>Gewichtung</th>
-            <th>Pluspunkte</th>
             <th>Aktion</th>
         </tr>
     </thead>
@@ -66,11 +70,6 @@
                 </span>
             </td>
             <td>{{ note.gewichtung }}</td>
-            <td>
-                <span style="font-weight: bold; color: {{ 'green' if note.pluspunkte >= 0 else 'red' }};">
-                    {{ note.pluspunkte }}
-                </span>
-            </td>
             <td>
                 <form action="{{ url_for('delete_note', note_id=note.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Möchtest du diese Note wirklich löschen?');">
                     <button type="submit" class="btn btn-xs btn-danger">
