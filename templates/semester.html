@@ -38,12 +38,12 @@
                 {% endif %}
             </td>
             <td>
-                <span style="font-weight: bold; color: {{ 'green' if sem.pluspunkte >= 0 else 'red' }};">
+                <span style="font-weight: bold; color: {{ 'green' if sem.pluspunkte and sem.pluspunkte >= 0 else 'red' }};">
                     {{ sem.pluspunkte if sem.pluspunkte else 0 }}
                 </span>
             </td>
             <td>
-                {% if sem.pluspunkte %}
+                {% if sem.pluspunkte is not none %}
                     {% if sem.pluspunkte >= 0 %}
                         <span class="label label-success">✓ Bestanden</span>
                     {% else %}

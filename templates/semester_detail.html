@@ -41,7 +41,7 @@
                 {% endif %}
             </td>
             <td>
-                <span style="font-weight: bold; color: {{ 'green' if fach.pluspunkte >= 0 else 'red' }};">
+                <span style="font-weight: bold; color: {{ 'green' if fach.pluspunkte and fach.pluspunkte >= 0 else 'red' }};">
                     {{ fach.pluspunkte if fach.pluspunkte else 0 }}
                 </span>
             </td>
