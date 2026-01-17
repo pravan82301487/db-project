@@ -50,11 +50,14 @@ def webhook():
 # HILFSFUNKTION: Pluspunkte nach Schweizer System berechnen
 def berechne_pluspunkte(notenwert):
     """
-    Schweizer System:
-    6.0 = +2, 5.5 = +1.5, 5.0 = +1, 4.5 = +0.5, 4.0 = 0
-    3.5 = -0.5, 3.0 = -1, 2.5 = -1.5, 2.0 = -2, usw.
+    Schweizer System (Mathematische Formel):
+    - Wenn Note >= 4: P(g) = g - 4
+    - Wenn Note < 4:  P(g) = 2 * (g - 4)
     """
-    return (notenwert - 4.0) * 2
+    if notenwert >= 4.0:
+        return notenwert - 4.0
+    else:
+        return 2.0 * (notenwert - 4.0)
 
 # Auth routes
 @app.route("/login", methods=["GET", "POST"])
@@ -141,7 +144,12 @@ def semester_list():
             s.name,
             COUNT(DISTINCT f.id) AS anzahl_faecher,
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte
+            ROUND(SUM(
+                CASE 
+                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
+                    ELSE 2.0 * (n.notenwert - 4.0)
+                END
+            ), 2) AS pluspunkte
         FROM semester s
         LEFT JOIN fach f ON f.semester_id = s.id
         LEFT JOIN note n ON n.fach_id = f.id
@@ -171,7 +179,12 @@ def semester_detail(semester_id):
             f.lehrer,
             f.fachgewichtung,
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte,
+            ROUND(SUM(
+                CASE 
+                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
+                    ELSE 2.0 * (n.notenwert - 4.0)
+                END
+            ), 2) AS pluspunkte,
             COUNT(n.id) AS anzahl_noten
         FROM fach f
         LEFT JOIN note n ON n.fach_id = f.id
@@ -232,7 +245,12 @@ def fach(fach_id):
             notenwert,
             gewichtung,
             datum,
-            ROUND((notenwert - 4.0) * 2, 2) AS pluspunkte
+            ROUND(
+                CASE 
+                    WHEN notenwert >= 4.0 THEN notenwert - 4.0
+                    ELSE 2.0 * (notenwert - 4.0)
+                END
+            , 2) AS pluspunkte
         FROM note
         WHERE fach_id = %s
         ORDER BY datum DESC
@@ -302,7 +320,12 @@ def index():
             s.name AS semester,
             s.id AS semester_id,
             ROUND(AVG(n.notenwert), 2) AS durchschnitt,
-            ROUND(SUM((n.notenwert - 4.0) * 2), 2) AS pluspunkte,
+            ROUND(SUM(
+                CASE 
+                    WHEN n.notenwert >= 4.0 THEN n.notenwert - 4.0
+                    ELSE 2.0 * (n.notenwert - 4.0)
+                END
+            ), 2) AS pluspunkte,
             COUNT(n.id) AS anzahl_noten
         FROM fach f
         JOIN semester s ON f.semester_id = s.id
@@ -313,6 +336,68 @@ def index():
     """, (current_user.id,))
 
     return render_template("main_page.html", faecher=faecher, current_date=date.today().isoformat())
+
+# LÖSCHEN-FUNKTIONEN
+@app.route("/semester/delete/<int:semester_id>", methods=["POST"])
+@login_required
+def delete_semester(semester_id):
+    # Überprüfen ob das Semester dem User gehört
+    semester = db_read(
+        "SELECT id FROM semester WHERE id = %s AND user_id = %s",
+        (semester_id, current_user.id),
+        single=True
+    )
+    
+    if not semester:
+        return "Semester nicht gefunden", 404
+    
+    # Semester löschen (CASCADE löscht automatisch Fächer und Noten)
+    db_write("DELETE FROM semester WHERE id = %s", (semester_id,))
+    
+    return redirect(url_for("semester_list"))
+
+@app.route("/fach/delete/<int:fach_id>", methods=["POST"])
+@login_required
+def delete_fach(fach_id):
+    # Überprüfen ob das Fach dem User gehört
+    fach = db_read(
+        "SELECT semester_id FROM fach WHERE id = %s AND user_id = %s",
+        (fach_id, current_user.id),
+        single=True
+    )
+    
+    if not fach:
+        return "Fach nicht gefunden", 404
+    
+    semester_id = fach["semester_id"]
+    
+    # Fach löschen (CASCADE löscht automatisch Noten)
+    db_write("DELETE FROM fach WHERE id = %s", (fach_id,))
+    
+    return redirect(url_for("semester_detail", semester_id=semester_id))
+
+@app.route("/note/delete/<int:note_id>", methods=["POST"])
+@login_required
+def delete_note(note_id):
+    # Fach-ID holen für Redirect
+    note_info = db_read(
+        """SELECT n.fach_id 
+           FROM note n
+           JOIN fach f ON n.fach_id = f.id
+           WHERE n.id = %s AND f.user_id = %s""",
+        (note_id, current_user.id),
+        single=True
+    )
+    
+    if not note_info:
+        return "Note nicht gefunden", 404
+    
+    fach_id = note_info["fach_id"]
+    
+    # Note löschen
+    db_write("DELETE FROM note WHERE id = %s", (note_id,))
+    
+    return redirect(url_for("fach", fach_id=fach_id))
 
 if __name__ == "__main__":
     app.run()

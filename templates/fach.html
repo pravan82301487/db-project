@@ -36,6 +36,11 @@
     <a href="{{ url_for('add_note', fach_id=fach.id) }}" class="btn btn-success">
         ➕ Neue Note hinzufügen
     </a>
+    <form action="{{ url_for('delete_fach', fach_id=fach.id) }}" method="post" style="display: inline; margin-left: 10px;" onsubmit="return confirm('Möchtest du das Fach \'{{ fach.fachname }}\' wirklich löschen? Alle Noten werden ebenfalls gelöscht!');">
+        <button type="submit" class="btn btn-danger">
+            🗑️ Fach löschen
+        </button>
+    </form>
 </div>
 
 {% if noten %}
@@ -47,6 +52,7 @@
             <th>Note</th>
             <th>Gewichtung</th>
             <th>Pluspunkte</th>
+            <th>Aktion</th>
         </tr>
     </thead>
     <tbody>
@@ -64,6 +70,13 @@
                 <span style="font-weight: bold; color: {{ 'green' if note.pluspunkte >= 0 else 'red' }};">
                     {{ note.pluspunkte }}
                 </span>
+            </td>
+            <td>
+                <form action="{{ url_for('delete_note', note_id=note.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Möchtest du diese Note wirklich löschen?');">
+                    <button type="submit" class="btn btn-xs btn-danger">
+                        🗑️
+                    </button>
+                </form>
             </td>
         </tr>
         {% endfor %}
